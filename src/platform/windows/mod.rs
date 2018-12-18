@@ -48,6 +48,15 @@ impl Platform for PlatformImpl {
         PlatformImpl
     }
 
+    fn refresh_cpu(&mut self) {
+
+    }
+
+    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
+        Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
+    }
+
+
     fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
         Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
     }

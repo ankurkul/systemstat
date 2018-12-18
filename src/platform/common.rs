@@ -12,6 +12,10 @@ pub trait Platform {
     /// `DelayedMeasurement` with `.done()`.
     fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>>;
 
+    fn refresh_cpu(&mut self);
+
+    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>>;
+
     /// Returns a delayed CPU load statistics object, average over all CPUs (cores).
     ///
     /// You need to wait some time (about a second is good) before unwrapping the

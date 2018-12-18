@@ -7,7 +7,9 @@ use super::common::*;
 use super::unix;
 use super::bsd;
 
-pub struct PlatformImpl;
+pub struct PlatformImpl {
+    delayed_cpu_metric:  DelayedMeasurement<Vec<CPULoad>>
+}
 
 macro_rules! sysctl {
     ($mib:expr, $dataptr:expr, $size:expr, $shouldcheck:expr) => {
@@ -43,6 +45,15 @@ impl Platform for PlatformImpl {
     fn new() -> Self {
         PlatformImpl
     }
+
+    fn refresh_cpu(&mut self) {
+        self.delayed_cpu_metric = Self.cpu_load();
+    }
+
+    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
+        self.delayed_cpu_metric.done()
+    }
+
 
     fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
         let loads = try!(measure_cpu());

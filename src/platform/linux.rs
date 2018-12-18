@@ -292,14 +292,25 @@ named!(proc_diskstats<Vec<BlockDeviceStats>>,
 );
 
 
-pub struct PlatformImpl;
+pub struct PlatformImpl {
+    delayed_cpu_metric:  DelayedMeasurement<Vec<CPULoad>>
+}
 
 /// An implementation of `Platform` for Linux.
 /// See `Platform` for documentation.
 impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
-        PlatformImpl
+        delayed_cpu_metric = Self.cpu_load();
+        Self
+    }
+
+    fn refresh_cpu(&mut self) {
+        self.delayed_cpu_metric = cpu_load();
+    }
+
+    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
+        self.delayed_cpu_metric.done()
     }
 
     fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
