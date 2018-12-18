@@ -16,6 +16,15 @@ pub trait Platform {
 
     fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>>;
 
+    fn raw_cpu_load_aggregate(&self) -> io::Result<CPULoad> {
+        let raw_cpu = self.raw_cpu_load();
+        raw_cpu.map(|ls| {
+                    let mut it = ls.iter();
+                    let first = it.next().unwrap().clone(); // has to be a variable, rust moves the iterator otherwise
+                    it.fold(first, |acc, l| acc.avg_add(l))
+                })
+    }
+
     /// Returns a delayed CPU load statistics object, average over all CPUs (cores).
     ///
     /// You need to wait some time (about a second is good) before unwrapping the
