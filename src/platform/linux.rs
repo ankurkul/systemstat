@@ -301,12 +301,14 @@ pub struct PlatformImpl {
 impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
-        delayed_cpu_metric = Self.cpu_load();
-        Self
+
+        PlatformImpl {
+            delayed_cpu_metric: cpu_load()
+        }
     }
 
     fn refresh_cpu(&mut self) {
-        self.delayed_cpu_metric = cpu_load();
+        self.delayed_cpu_metric = self.cpu_load();
     }
 
     fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
@@ -405,7 +407,7 @@ impl Platform for PlatformImpl {
         for e in entries {
             let p = e.unwrap().path();
             let s = p.to_str().unwrap();
-            // let f = p.file_name().unwrap().to_str().unwrap();
+            let f = p.file_name().unwrap().to_str().unwrap();
             if f.len() > 3 {
                 if value_from_file::<String>(&(s.to_string() + "/type")).map(|t| t == "Battery").unwrap_or(false) {
                     full += try!(
