@@ -67,7 +67,7 @@ lazy_static! {
 impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
-        PlatformImpl {
+        Self {
             delayed_cpu_metric: cpu_load()
         }
     }
