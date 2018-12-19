@@ -8,7 +8,7 @@ use super::unix;
 use super::bsd;
 
 pub struct PlatformImpl {
-    delayed_cpu_metric:  DelayedMeasurement<Vec<CPULoad>>
+    previous_cpu_load:  Option<DelayedMeasurement<Vec<CPULoad>>>
 }
 
 macro_rules! sysctl_mib {
@@ -67,21 +67,27 @@ lazy_static! {
 impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
-        Self {
-            delayed_cpu_metric: cpu_load()
+        PlatformImpl {
+            previous_cpu_load: Option.None
         }
     }
 
-    fn refresh_cpu(&mut self) {
-        self.delayed_cpu_metric = Self.cpu_load();
+    fn refresh(&mut self) {
+        self.previous_cpu_load = std::prelude::v1::Option::Some(self.cpu_load_delayed());
     }
 
-    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
-        self.delayed_cpu_metric.done()
+    fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
+
+        if let Some(ref mut previous_cpu_load) = self.previous_cpu_load {
+            previous_cpu_load.as_ref().unwrap().done()
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
+        }
     }
 
 
-    fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
+    fn cpu_load_delayed(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
         let loads = try!(measure_cpu());
         Ok(DelayedMeasurement::new(
                 Box::new(move || Ok(loads.iter()

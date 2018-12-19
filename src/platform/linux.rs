@@ -9,6 +9,7 @@ use super::unix;
 use nom::{digit, not_line_ending, space, is_space};
 use std::str;
 use std::path::Path;
+use std::prelude::v1::Option::*;
 
 fn read_file(path: &str) -> io::Result<String> {
     let mut s = String::new();
@@ -293,7 +294,7 @@ named!(proc_diskstats<Vec<BlockDeviceStats>>,
 
 
 pub struct PlatformImpl {
-    delayed_cpu_metric:  DelayedMeasurement<Vec<CPULoad>>
+    previous_cpu_load:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>
 }
 
 /// An implementation of `Platform` for Linux.
@@ -301,21 +302,26 @@ pub struct PlatformImpl {
 impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
-
-        Self {
-            delayed_cpu_metric: cpu_load()
+        PlatformImpl {
+            previous_cpu_load: std::prelude::v1::Option::None
         }
     }
 
-    fn refresh_cpu(&mut self) {
-        self.delayed_cpu_metric = self.cpu_load();
+    fn refresh(&mut self) {
+        self.previous_cpu_load = std::prelude::v1::Option::Some(self.cpu_load_delayed());
     }
 
-    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
-        self.delayed_cpu_metric.done()
+    fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
+
+        if let Some(ref mut previous_cpu_load) = self.previous_cpu_load {
+            previous_cpu_load.as_ref().unwrap().done()
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
+        }
     }
 
-    fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
+    fn cpu_load_delayed(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
         cpu_time().map(|times| {
             DelayedMeasurement::new(Box::new(move || {
                 cpu_time().map(|delay_times| {
