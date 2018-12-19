@@ -8,7 +8,7 @@ use super::unix;
 use super::bsd;
 
 pub struct PlatformImpl {
-    delayed_cpu_metric:  DelayedMeasurement<Vec<CPULoad>>
+    delayed_cpu_metric:  Option<DelayedMeasurement<Vec<CPULoad>>>
 }
 
 macro_rules! sysctl_mib {
@@ -67,15 +67,22 @@ lazy_static! {
 impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
-        PlatformImpl
+        PlatformImpl {
+            delayed_cpu_metric: Option.None
+        }
     }
 
     fn refresh_cpu(&mut self) {
-        self.delayed_cpu_metric = Self.cpu_load();
+        self.delayed_cpu_metric = Option.Some(self.cpu_load());
     }
 
     fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
-        self.delayed_cpu_metric.done()
+        if self.delayed_cpu_metric.is_some() {
+            self.delayed_cpu_metric.done()
+        }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
+        }
     }
 
 
