@@ -14,9 +14,9 @@ pub trait Platform {
 
     fn refresh_cpu(&mut self);
 
-    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>>;
+    fn raw_cpu_load(&mut self) -> io::Result<Vec<CPULoad>>;
 
-    fn raw_cpu_load_aggregate(&self) -> io::Result<CPULoad> {
+    fn raw_cpu_load_aggregate(&mut self) -> io::Result<CPULoad> {
         let raw_cpu = self.raw_cpu_load();
         raw_cpu.map(|ls| {
                     let mut it = ls.iter();

@@ -294,7 +294,7 @@ named!(proc_diskstats<Vec<BlockDeviceStats>>,
 
 
 pub struct PlatformImpl {
-    delayed_cpu_metric:  Option<DelayedMeasurement<Vec<CPULoad>>>
+    delayed_cpu_metric:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>
 }
 
 /// An implementation of `Platform` for Linux.
@@ -311,9 +311,10 @@ impl Platform for PlatformImpl {
         self.delayed_cpu_metric = std::prelude::v1::Option::Some(self.cpu_load());
     }
 
-    fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
-        if self.delayed_cpu_metric.is_some() {
-            self.delayed_cpu_metric.unwrap().done()
+    fn raw_cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
+
+        if let Some(ref mut delayed_cpu_metric) = self.delayed_cpu_metric {
+            delayed_cpu_metric.as_ref().unwrap().done()
         }
         else {
             Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
