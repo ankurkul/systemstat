@@ -9,7 +9,7 @@ use super::unix;
 use nom::{digit, not_line_ending, space, is_space};
 use std::str;
 use std::path::Path;
-use std::prelude::v1::Option;
+use std::prelude::v1::Option::*;
 
 fn read_file(path: &str) -> io::Result<String> {
     let mut s = String::new();
