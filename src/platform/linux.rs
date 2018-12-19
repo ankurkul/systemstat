@@ -9,6 +9,7 @@ use super::unix;
 use nom::{digit, not_line_ending, space, is_space};
 use std::str;
 use std::path::Path;
+use std::prelude::v1::Option;
 
 fn read_file(path: &str) -> io::Result<String> {
     let mut s = String::new();
@@ -312,7 +313,7 @@ impl Platform for PlatformImpl {
 
     fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
         if self.delayed_cpu_metric.is_some() {
-            self.delayed_cpu_metric.done()
+            self.delayed_cpu_metric.unwrap().done()
         }
         else {
             Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
