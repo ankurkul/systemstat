@@ -303,12 +303,12 @@ impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
         PlatformImpl {
-            delayed_cpu_metric: Option.None
+            delayed_cpu_metric: std::prelude::v1::Option::None
         }
     }
 
     fn refresh_cpu(&mut self) {
-        self.delayed_cpu_metric = Option.Some(self.cpu_load());
+        self.delayed_cpu_metric = std::prelude::v1::Option::Some(self.cpu_load());
     }
 
     fn raw_cpu_load(&self) -> io::Result<Vec<CPULoad>> {
