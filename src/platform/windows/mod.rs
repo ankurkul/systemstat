@@ -39,7 +39,7 @@ fn last_os_error() -> io::Result<()> {
 }
 
 pub struct PlatformImpl {
-    delayed_cpu_metric: Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>
+    previous_cpu_load: Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>
 }
 
 /// An implementation of `Platform` for Windows.
@@ -48,18 +48,18 @@ impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
         PlatformImpl {
-            delayed_cpu_metric: std::prelude::v1::Option::None
+            previous_cpu_load: std::prelude::v1::Option::None
         }
     }
 
-    fn refresh_cpu(&mut self) {
-        self.delayed_cpu_metric = std::prelude::v1::Option::Some(self.cpu_load());
+    fn refresh(&mut self) {
+        self.previous_cpu_load = std::prelude::v1::Option::Some(self.cpu_load_delayed());
     }
 
-    fn raw_cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
+    fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
 
-        if let Some(ref mut delayed_cpu_metric) = self.delayed_cpu_metric {
-            delayed_cpu_metric.as_ref().unwrap().done()
+        if let Some(ref mut previous_cpu_load) = self.previous_cpu_load {
+            previous_cpu_load.as_ref().unwrap().done()
         }
         else {
             Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
@@ -67,7 +67,7 @@ impl Platform for PlatformImpl {
     }
 
 
-    fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
+    fn cpu_load_delayed(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>> {
         Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
     }
 

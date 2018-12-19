@@ -10,15 +10,15 @@ pub trait Platform {
     ///
     /// You need to wait some time (about a second is good) before unwrapping the
     /// `DelayedMeasurement` with `.done()`.
-    fn cpu_load(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>>;
+    fn cpu_load_delayed(&self) -> io::Result<DelayedMeasurement<Vec<CPULoad>>>;
 
-    fn refresh_cpu(&mut self);
+    fn refresh(&mut self);
 
-    fn raw_cpu_load(&mut self) -> io::Result<Vec<CPULoad>>;
+    fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>>;
 
-    fn raw_cpu_load_aggregate(&mut self) -> io::Result<CPULoad> {
-        let raw_cpu = self.raw_cpu_load();
-        raw_cpu.map(|ls| {
+    fn cpu_load_aggregate(&mut self) -> io::Result<CPULoad> {
+        let cpu_load = self.cpu_load();
+        cpu_load.map(|ls| {
                     let mut it = ls.iter();
                     let first = it.next().unwrap().clone(); // has to be a variable, rust moves the iterator otherwise
                     it.fold(first, |acc, l| acc.avg_add(l))
@@ -29,15 +29,15 @@ pub trait Platform {
     ///
     /// You need to wait some time (about a second is good) before unwrapping the
     /// `DelayedMeasurement` with `.done()`.
-    fn cpu_load_aggregate(&self) -> io::Result<DelayedMeasurement<CPULoad>> {
-        let measurement = try!(self.cpu_load());
-        Ok(DelayedMeasurement::new(
-                Box::new(move || measurement.done().map(|ls| {
-                    let mut it = ls.iter();
-                    let first = it.next().unwrap().clone(); // has to be a variable, rust moves the iterator otherwise
-                    it.fold(first, |acc, l| acc.avg_add(l))
-                }))))
-    }
+//    fn cpu_load_aggregate(&self) -> io::Result<DelayedMeasurement<CPULoad>> {
+//        let measurement = try!(self.cpu_load());
+//        Ok(DelayedMeasurement::new(
+//                Box::new(move || measurement.done().map(|ls| {
+//                    let mut it = ls.iter();
+//                    let first = it.next().unwrap().clone(); // has to be a variable, rust moves the iterator otherwise
+//                    it.fold(first, |acc, l| acc.avg_add(l))
+//                }))))
+//    }
 
     /// Returns a load average object.
     fn load_average(&self) -> io::Result<LoadAverage>;
