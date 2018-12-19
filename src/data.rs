@@ -31,7 +31,9 @@ impl<T> DelayedMeasurement<T> {
 
 #[cfg(not(target_os = "linux"))]
 #[derive(Debug, Clone)]
-pub struct PlatformCpuLoad {}
+pub struct PlatformCpuLoad {
+    pub iowait: f32
+}
 
 #[cfg(target_os = "linux")]
 #[derive(Debug, Clone)]
@@ -51,7 +53,9 @@ impl PlatformCpuLoad {
     #[cfg(not(target_os="linux"))]
     #[inline(always)]
     pub fn avg_add(self, rhs: &Self) -> Self {
-        PlatformCpuLoad {}
+        PlatformCpuLoad {
+            iowait: 0.0,
+        }
     }
 
     #[cfg(target_os="linux")]
@@ -65,7 +69,9 @@ impl PlatformCpuLoad {
     #[cfg(not(target_os="linux"))]
     #[inline(always)]
     pub fn zero() -> Self {
-        PlatformCpuLoad {}
+        PlatformCpuLoad {
+            iowait: 0.0,
+        }
     }
 
     #[cfg(target_os="linux")]
@@ -79,7 +85,9 @@ impl PlatformCpuLoad {
     #[cfg(not(target_os="linux"))]
     #[inline(always)]
     pub fn from(input: f32) -> Self {
-        PlatformCpuLoad {}
+        PlatformCpuLoad {
+            iowait: input,
+        }
     }
 }
 
