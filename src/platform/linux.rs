@@ -71,12 +71,13 @@ named!(
         idle: usize_s >>
         iowait: usize_s >>
         irq: usize_s >>
+        softirq: usize_s >>
             (CpuTime {
                  user: user,
                  nice: nice,
                  system: system,
                  idle: idle,
-                 interrupt: irq,
+                 interrupt: irq + softirq,
                  other: iowait,
              })
     )
