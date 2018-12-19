@@ -295,7 +295,8 @@ named!(proc_diskstats<Vec<BlockDeviceStats>>,
 
 
 pub struct PlatformImpl {
-    previous_cpu_load:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>
+    previous_cpu_load:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>,
+    previous_network_stats: Option<io::Result<DelayedMeasurement<NetworkStats>>>
 }
 
 /// An implementation of `Platform` for Linux.
@@ -304,7 +305,8 @@ impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
         PlatformImpl {
-            previous_cpu_load: std::prelude::v1::Option::None
+            previous_cpu_load: std::prelude::v1::Option::None,
+            previous_network_stats: std::prelude::v1::Option::None
         }
     }
 
@@ -530,6 +532,21 @@ impl Platform for PlatformImpl {
             rx_errors,
             tx_errors,
         })
+    }
+
+    fn all_network_stats(&self) -> io::Result<Vec<NetworkStats>> {
+         let mut result = Vec::new();
+         match self.networks() {
+            Ok(networks) => {
+                for (key, value) in networks.iter() {
+                    let stats = self.network_stats(key);
+                    result.push(stats.unwrap());
+                }
+             }
+             Err(x) => panic!("Cannot process")
+         }
+
+         Ok(result)
     }
 
     fn cpu_temp(&self) -> io::Result<f32> {

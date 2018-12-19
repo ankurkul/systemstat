@@ -153,6 +153,21 @@ impl Platform for PlatformImpl {
         Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
     }
 
+    fn all_network_stats(&self) -> io::Result<Vec<NetworkStats>> {
+         let mut result = Vec::new();
+         match self.networks() {
+            Ok(networks) => {
+                for (key, value) in networks.iter() {
+                    let stats = self.network_stats(key);
+                    result.push(stats.unwrap());
+                }
+             }
+             Err(x) => panic!("Cannot process")
+         }
+
+         Ok(result)
+    }
+
     fn cpu_temp(&self) -> io::Result<f32> {
         Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
     }

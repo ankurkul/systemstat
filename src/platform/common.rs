@@ -86,6 +86,8 @@ pub trait Platform {
     /// Returns statistics for a given interface (bytes/packets sent/received)
     fn network_stats(&self, interface: &str) -> io::Result<NetworkStats>;
 
+    fn all_network_stats(&self) -> io::Result<Vec<NetworkStats>>;
+
     /// Returns the current CPU temperature in degrees Celsius.
     ///
     /// Depending on the platform, this might be core 0, package, etc.
