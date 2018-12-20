@@ -63,7 +63,7 @@ fn read_all_network_stats() -> io::Result<Vec<NetworkStats>> {
                 result.push(stats.unwrap());
             }
          }
-         Err(x) => panic!("Cannot process")
+         Err(_) => ()
      }
 
      Ok(result)
