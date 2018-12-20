@@ -48,6 +48,46 @@ fn time(on_ac: bool, charge_full: i32, charge_now: i32, current_now: i32) -> Dur
     }
 }
 
+fn networks_static() -> io::Result<BTreeMap<String, Network>> {
+        unix::networks()
+    }
+
+fn network_stats_static(interface: &str) -> io::Result<NetworkStats> {
+        let path_root: String = ("/sys/class/net/".to_string() + interface) + "/statistics/";
+        let stats_file = |file: &str| (&path_root).to_string() + file;
+
+        let rx_bytes: usize = try!(value_from_file::<usize>(&stats_file("rx_bytes")));
+        let tx_bytes: usize = try!(value_from_file::<usize>(&stats_file("tx_bytes")));
+        let rx_packets: usize = try!(value_from_file::<usize>(&stats_file("rx_packets")));
+        let tx_packets: usize = try!(value_from_file::<usize>(&stats_file("tx_packets")));
+        let rx_errors: usize = try!(value_from_file::<usize>(&stats_file("rx_errors")));
+        let tx_errors: usize = try!(value_from_file::<usize>(&stats_file("tx_errors")));
+
+        Ok(NetworkStats {
+            rx_bytes,
+            tx_bytes,
+            rx_packets,
+            tx_packets,
+            rx_errors,
+            tx_errors,
+        })
+    }
+
+fn all_network_stats_static() -> io::Result<Vec<NetworkStats>> {
+        let mut result = Vec::new();
+         match networks_static() {
+            Ok(networks) => {
+                for (key, value) in networks.iter() {
+                    let stats = network_stats_static(key);
+                    result.push(stats.unwrap());
+                }
+             }
+             Err(x) => panic!("Cannot process")
+         }
+
+         Ok(result)
+    }
+
 /// Parse an unsigned integer out of a string, surrounded by whitespace
 named!(
     usize_s<usize>,
@@ -312,6 +352,7 @@ impl Platform for PlatformImpl {
 
     fn refresh(&mut self) {
         self.previous_cpu_load = std::prelude::v1::Option::Some(self.cpu_load_delayed());
+        self.previous_network_stats = std::prelude::v1::Option::Some(self.all_network_stats_delayed());
     }
 
     fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
@@ -535,6 +576,44 @@ impl Platform for PlatformImpl {
     }
 
     fn all_network_stats(&self) -> io::Result<Vec<NetworkStats>> {
+         let mut result = Vec::new();
+         match self.networks() {
+            Ok(networks) => {
+                for (key, value) in networks.iter() {
+                    let stats = self.network_stats(key);
+                    result.push(stats.unwrap());
+                }
+             }
+             Err(x) => panic!("Cannot process")
+         }
+
+         Ok(result)
+    }
+
+    fn all_network_stats_final(&self) -> io::Result<Vec<NetworkStats>> {
+         if let Some(ref previous_network_stats) = self.previous_network_stats {
+             previous_network_stats.as_ref().unwrap().done()
+         }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
+        }
+    }
+
+    fn all_network_stats_delayed(&self) -> io::Result<DelayedMeasurement<Vec<NetworkStats>>> {
+         all_network_stats_static().map(|times| {
+            DelayedMeasurement::new(Box::new(move || {
+                all_network_stats_static().map(|delay_times| {
+                    delay_times
+                        .iter()
+                        .zip(times.iter())
+                        .map(| (now, prev)| (*now - prev))
+                        .collect::<Vec<_>>()
+                })
+            }))
+         })
+    }
+
+    fn all_network_stats_raw(&self) -> io::Result<Vec<NetworkStats>> {
          let mut result = Vec::new();
          match self.networks() {
             Ok(networks) => {

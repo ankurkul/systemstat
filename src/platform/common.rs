@@ -88,6 +88,12 @@ pub trait Platform {
 
     fn all_network_stats(&self) -> io::Result<Vec<NetworkStats>>;
 
+    fn all_network_stats_raw(&self) -> io::Result<Vec<NetworkStats>>;
+
+    fn all_network_stats_delayed(&self) -> io::Result<DelayedMeasurement<Vec<NetworkStats>>>;
+
+    fn all_network_stats_final(&self) -> io::Result<Vec<NetworkStats>>;
+
     /// Returns the current CPU temperature in degrees Celsius.
     ///
     /// Depending on the platform, this might be core 0, package, etc.
