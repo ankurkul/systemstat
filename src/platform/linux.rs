@@ -29,6 +29,46 @@ fn value_from_file<T: str::FromStr>(path: &str) -> io::Result<T> {
         })
 }
 
+fn get_networks() -> io::Result<BTreeMap<String, Network>> {
+    unix::networks()
+}
+
+fn read_network_stats(interface: &str) -> io::Result<NetworkStats> {
+    let path_root: String = ("/sys/class/net/".to_string() + interface) + "/statistics/";
+    let stats_file = |file: &str| (&path_root).to_string() + file;
+
+    let rx_bytes: usize = try!(value_from_file::<usize>(&stats_file("rx_bytes")));
+    let tx_bytes: usize = try!(value_from_file::<usize>(&stats_file("tx_bytes")));
+    let rx_packets: usize = try!(value_from_file::<usize>(&stats_file("rx_packets")));
+    let tx_packets: usize = try!(value_from_file::<usize>(&stats_file("tx_packets")));
+    let rx_errors: usize = try!(value_from_file::<usize>(&stats_file("rx_errors")));
+    let tx_errors: usize = try!(value_from_file::<usize>(&stats_file("tx_errors")));
+
+    Ok(NetworkStats {
+        rx_bytes,
+        tx_bytes,
+        rx_packets,
+        tx_packets,
+        rx_errors,
+        tx_errors,
+    })
+}
+
+fn read_all_network_stats() -> io::Result<Vec<NetworkStats>> {
+    let mut result = Vec::new();
+     match get_networks() {
+        Ok(networks) => {
+            for (key, value) in networks.iter() {
+                let stats = read_network_stats(key);
+                result.push(stats.unwrap());
+            }
+         }
+         Err(_) => ()
+     }
+
+     Ok(result)
+}
+
 fn capacity(charge_full: i32, charge_now: i32) -> f32 {
     charge_now as f32 / charge_full as f32
 }
@@ -71,12 +111,13 @@ named!(
         idle: usize_s >>
         iowait: usize_s >>
         irq: usize_s >>
+        softirq: usize_s >>
             (CpuTime {
                  user: user,
                  nice: nice,
                  system: system,
                  idle: idle,
-                 interrupt: irq,
+                 interrupt: irq + softirq,
                  other: iowait,
              })
     )
@@ -294,7 +335,8 @@ named!(proc_diskstats<Vec<BlockDeviceStats>>,
 
 
 pub struct PlatformImpl {
-    previous_cpu_load:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>
+    previous_cpu_load:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>,
+    previous_network_stats: Option<io::Result<DelayedMeasurement<Vec<NetworkStats>>>>
 }
 
 /// An implementation of `Platform` for Linux.
@@ -303,12 +345,14 @@ impl Platform for PlatformImpl {
     #[inline(always)]
     fn new() -> Self {
         PlatformImpl {
-            previous_cpu_load: std::prelude::v1::Option::None
+            previous_cpu_load: std::prelude::v1::Option::None,
+            previous_network_stats: std::prelude::v1::Option::None
         }
     }
 
     fn refresh(&mut self) {
         self.previous_cpu_load = std::prelude::v1::Option::Some(self.cpu_load_delayed());
+        self.previous_network_stats = std::prelude::v1::Option::Some(self.all_network_stats_delayed());
     }
 
     fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
@@ -507,28 +551,30 @@ impl Platform for PlatformImpl {
     }
 
     fn networks(&self) -> io::Result<BTreeMap<String, Network>> {
-        unix::networks()
+        get_networks()
     }
 
-    fn network_stats(&self, interface: &str) -> io::Result<NetworkStats> {
-        let path_root: String = ("/sys/class/net/".to_string() + interface) + "/statistics/";
-        let stats_file = |file: &str| (&path_root).to_string() + file;
+    fn network_stats(&self) -> io::Result<Vec<NetworkStats>> {
+         if let Some(ref previous_network_stats) = self.previous_network_stats {
+             previous_network_stats.as_ref().unwrap().done()
+         }
+        else {
+            Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
+        }
+    }
 
-        let rx_bytes: usize = try!(value_from_file::<usize>(&stats_file("rx_bytes")));
-        let tx_bytes: usize = try!(value_from_file::<usize>(&stats_file("tx_bytes")));
-        let rx_packets: usize = try!(value_from_file::<usize>(&stats_file("rx_packets")));
-        let tx_packets: usize = try!(value_from_file::<usize>(&stats_file("tx_packets")));
-        let rx_errors: usize = try!(value_from_file::<usize>(&stats_file("rx_errors")));
-        let tx_errors: usize = try!(value_from_file::<usize>(&stats_file("tx_errors")));
-
-        Ok(NetworkStats {
-            rx_bytes,
-            tx_bytes,
-            rx_packets,
-            tx_packets,
-            rx_errors,
-            tx_errors,
-        })
+    fn all_network_stats_delayed(&self) -> io::Result<DelayedMeasurement<Vec<NetworkStats>>> {
+         read_all_network_stats().map(|times| {
+            DelayedMeasurement::new(Box::new(move || {
+                read_all_network_stats().map(|delay_times| {
+                    delay_times
+                        .iter()
+                        .zip(times.iter())
+                        .map(| (now, prev)| (*now - prev))
+                        .collect::<Vec<_>>()
+                })
+            }))
+         })
     }
 
     fn cpu_temp(&self) -> io::Result<f32> {

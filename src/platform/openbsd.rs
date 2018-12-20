@@ -145,8 +145,12 @@ impl Platform for PlatformImpl {
         unix::networks()
     }
 
-    fn network_stats(&self, interface: &str) -> io::Result<NetworkStats> {
-        Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
+    fn network_stats(&self) -> io::Result<Vec<NetworkStats>> {
+         Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
+    }
+
+    fn all_network_stats_delayed(&self) -> io::Result<DelayedMeasurement<Vec<NetworkStats>>> {
+         Err(io::Error::new(io::ErrorKind::Other, "Not supported"))
     }
 
     fn cpu_temp(&self) -> io::Result<f32> {

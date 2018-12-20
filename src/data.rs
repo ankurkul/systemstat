@@ -287,7 +287,7 @@ pub struct Network {
     pub addrs: Vec<NetworkAddrs>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct NetworkStats {
     pub rx_bytes: usize,
     pub tx_bytes: usize,
@@ -295,6 +295,22 @@ pub struct NetworkStats {
     pub tx_packets: usize,
     pub rx_errors: usize,
     pub tx_errors: usize,
+}
+
+impl<'a> Sub<&'a NetworkStats> for NetworkStats {
+    type Output = NetworkStats;
+
+    #[inline(always)]
+    fn sub(self, rhs: &NetworkStats) -> NetworkStats {
+        NetworkStats {
+            rx_bytes: self.rx_bytes.saturating_sub(rhs.rx_bytes),
+            tx_bytes: self.tx_bytes.saturating_sub(rhs.tx_bytes),
+            rx_packets: self.rx_packets.saturating_sub(rhs.rx_packets),
+            tx_packets: self.tx_packets.saturating_sub(rhs.tx_packets),
+            rx_errors: self.rx_errors.saturating_sub(rhs.rx_errors),
+            tx_errors: self.tx_errors.saturating_sub(rhs.tx_errors),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

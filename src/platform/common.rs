@@ -84,7 +84,9 @@ pub trait Platform {
     fn networks(&self) -> io::Result<BTreeMap<String, Network>>;
 
     /// Returns statistics for a given interface (bytes/packets sent/received)
-    fn network_stats(&self, interface: &str) -> io::Result<NetworkStats>;
+    fn network_stats(&self) -> io::Result<Vec<NetworkStats>>;
+
+    fn all_network_stats_delayed(&self) -> io::Result<DelayedMeasurement<Vec<NetworkStats>>>;
 
     /// Returns the current CPU temperature in degrees Celsius.
     ///
