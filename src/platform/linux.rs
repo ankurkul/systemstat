@@ -336,7 +336,7 @@ named!(proc_diskstats<Vec<BlockDeviceStats>>,
 
 pub struct PlatformImpl {
     previous_cpu_load:  Option<io::Result<DelayedMeasurement<Vec<CPULoad>>>>,
-    previous_network_stats: Option<io::Result<DelayedMeasurement<NetworkStats>>>
+    previous_network_stats: Option<io::Result<DelayedMeasurement<Vec<NetworkStats>>>>
 }
 
 /// An implementation of `Platform` for Linux.
