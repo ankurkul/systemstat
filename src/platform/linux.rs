@@ -564,9 +564,9 @@ impl Platform for PlatformImpl {
     }
 
     fn all_network_stats_delayed(&self) -> io::Result<DelayedMeasurement<Vec<NetworkStats>>> {
-         all_network_stats_static().map(|times| {
+         read_all_network_stats().map(|times| {
             DelayedMeasurement::new(Box::new(move || {
-                all_network_stats_static().map(|delay_times| {
+                read_all_network_stats().map(|delay_times| {
                     delay_times
                         .iter()
                         .zip(times.iter())
