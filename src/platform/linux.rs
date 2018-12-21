@@ -358,7 +358,10 @@ impl Platform for PlatformImpl {
     fn cpu_load(&mut self) -> io::Result<Vec<CPULoad>> {
 
         if let Some(ref mut previous_cpu_load) = self.previous_cpu_load {
-            previous_cpu_load.as_ref().unwrap().done()
+            match previous_cpu_load.as_ref() {
+                Ok(cpu_value) => cpu_value.done(),
+                Err(_) =>  Err(io::Error::new(io::ErrorKind::Other, "Failed to fetch CPU values"))
+            }
         }
         else {
             Err(io::Error::new(io::ErrorKind::Other, "call refresh first"))
